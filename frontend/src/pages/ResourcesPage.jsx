@@ -1,5 +1,6 @@
 import LifecycleListingPage from "../components/LifecycleListingPage";
 import { resources } from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 
 const FIELDS = [
   { name: "title", label: "Title", required: true },
@@ -21,6 +22,7 @@ const FIELDS = [
 ];
 
 export default function ResourcesPage() {
+  const { user } = useAuth();
   return (
     <LifecycleListingPage
       title="Donate & reuse"
@@ -28,6 +30,9 @@ export default function ResourcesPage() {
       ownerField="owner"
       fields={FIELDS}
       createDefaults={{ title: "", category: "", condition: "good", quantity: 1, address_text: "", description: "" }}
+      canCreate={["donor", "admin"].includes(user?.role)}
+      canRequest={["receiver", "general", "admin"].includes(user?.role)}
+      canAssign={["volunteer", "ngo", "admin"].includes(user?.role)}
     />
   );
 }

@@ -1,7 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { canAccess } from "../roleAccess";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, section }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -11,5 +12,6 @@ export default function ProtectedRoute({ children }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
+  if (section && !canAccess(user.role, section)) return <Navigate to="/app" replace />;
   return children;
 }

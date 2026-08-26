@@ -1,5 +1,6 @@
 import LifecycleListingPage from "../components/LifecycleListingPage";
 import { food } from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 
 const FIELDS = [
   { name: "title", label: "Title", required: true },
@@ -10,6 +11,7 @@ const FIELDS = [
 ];
 
 export default function FoodPage() {
+  const { user } = useAuth();
   return (
     <LifecycleListingPage
       title="Food rescue"
@@ -17,6 +19,9 @@ export default function FoodPage() {
       ownerField="provider"
       fields={FIELDS}
       createDefaults={{ title: "", quantity_servings: 10, expiry_time: "", address_text: "", description: "" }}
+      canCreate={["donor", "admin"].includes(user?.role)}
+      canRequest={["receiver", "general", "admin"].includes(user?.role)}
+      canAssign={["volunteer", "ngo", "admin"].includes(user?.role)}
     />
   );
 }

@@ -7,6 +7,10 @@ import StatusBadge from "../components/StatusBadge";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const role = user?.role;
+  const isDonor = role === "donor";
+  const isResponder = role === "volunteer" || role === "ngo";
+  const isReceiver = role === "receiver" || role === "general";
   const [stats, setStats] = useState(null);
   const [myResources, setMyResources] = useState([]);
   const [myFood, setMyFood] = useState([]);
@@ -15,11 +19,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     impactApi.summary().then(({ data }) => setStats(data)).catch(() => {});
-    resources.list({ mine: "owned" }).then(({ data }) => setMyResources(data.results || data)).catch(() => {});
-    food.list({ mine: "provided" }).then(({ data }) => setMyFood(data.results || data)).catch(() => {});
-    blood.list({ mine: "requested" }).then(({ data }) => setMyBlood(data.results || data)).catch(() => {});
-    emergency.list({ mine: "requested" }).then(({ data }) => setMyEmergency(data.results || data)).catch(() => {});
-  }, []);
+    resources.list({ mine: isResponder ? "volunteering" : isReceiver ? "requested" : "owned" }).then(({ data }) => setMyResources(data.results || data)).catch(() => {});
+    food.list({ mine: isResponder ? "volunteering" : isReceiver ? "requested" : "provided" }).then(({ data }) => setMyFood(data.results || data)).catch(() => {});
+    blood.list({ mine: isReceiver ? "requested" : "matched" }).then(({ data }) => setMyBlood(data.results || data)).catch(() => {});
+    emergency.list({ mine: isResponder ? "assigned" : "requested" }).then(({ data }) => setMyEmergency(data.results || data)).catch(() => {});
+  }, [isReceiver, isResponder]);
+
+  const title = isDonor ? "Your donations" : isResponder ? "Your response work" : "Your requests";
+  const intro = isDonor
+    ? "Share useful items, food, or blood with people nearby."
+    : isResponder
+      ? "Track the pickups and emergency responses you are handling."
+      : "Track the help you have requested and the support on its way.";
 
   return (
     <div>
@@ -27,6 +38,7 @@ export default function Dashboard() {
         Welcome, {user?.first_name || user?.username}
       </h1>
       <p className="mt-1 text-sm text-ink-soft capitalize">Role: {user?.role?.replace("_", " ")}</p>
+      <p className="mt-4 max-w-xl text-sm text-ink-soft">{intro}</p>
 
       {stats && (
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -38,10 +50,10 @@ export default function Dashboard() {
       )}
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <Section title="Your resource listings" viewAll="/app/resources" items={myResources} empty="You haven't listed anything yet." />
-        <Section title="Your food listings" viewAll="/app/food" items={myFood} empty="No food listings yet." />
-        <Section title="Your blood requests" viewAll="/app/blood" items={myBlood} empty="No blood requests yet." nameKey={(r) => `${r.blood_group} × ${r.units_needed} — ${r.hospital_name}`} />
-        <Section title="Your emergency requests" viewAll="/app/emergency" items={myEmergency} empty="No emergency requests yet." nameKey={(r) => r.request_type} />
+        <Section title={isDonor ? "Items you are donating" : isResponder ? "Resource deliveries" : "Requested items"} viewAll="/app/resources" items={myResources} empty={isDonor ? "You have not listed any items yet." : "No resource activity yet."} />
+        <Section title={isDonor ? "Food you are rescuing" : isResponder ? "Food deliveries" : "Requested food"} viewAll="/app/food" items={myFood} empty="No food activity yet." />
+        <Section title={isDonor ? "Blood commitments" : "Your blood requests"} viewAll="/app/blood" items={myBlood} empty="No blood activity yet." nameKey={(r) => `${r.blood_group} × ${r.units_needed} — ${r.hospital_name}`} />
+        <Section title={isResponder ? "Assigned emergencies" : "Your emergency requests"} viewAll="/app/emergency" items={myEmergency} empty="No emergency activity yet." nameKey={(r) => r.request_type} />
       </div>
     </div>
   );

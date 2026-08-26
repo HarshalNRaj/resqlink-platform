@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
  * assigned -> completed (Resources, Food). Pass in the api object and
  * field config; behavior/actions are identical across both modules.
  */
-export default function LifecycleListingPage({ title, api, ownerField, fields, createDefaults }) {
+export default function LifecycleListingPage({ title, api, ownerField, fields, createDefaults, canCreate = true, canRequest = true, canAssign = false }) {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -48,7 +48,7 @@ export default function LifecycleListingPage({ title, api, ownerField, fields, c
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-ink">{title}</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New listing"}</Button>
+        {canCreate && <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New listing"}</Button>}
       </div>
 
       {showForm && (
@@ -123,12 +123,12 @@ export default function LifecycleListingPage({ title, api, ownerField, fields, c
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {it.status === "available" && !isOwner && (
+                  {canRequest && it.status === "available" && !isOwner && (
                     <Button variant="outline" disabled={busyId === it.id} onClick={() => act(api.requestItem, it.id)}>
                       Request
                     </Button>
                   )}
-                  {it.status === "requested" && !isRequester && (
+                  {canAssign && it.status === "requested" && !isRequester && (
                     <Button variant="outline" disabled={busyId === it.id} onClick={() => act(api.assign, it.id)}>
                       I'll deliver this
                     </Button>

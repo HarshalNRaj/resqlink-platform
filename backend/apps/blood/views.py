@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Role
 from apps.common.notify import notify
+from apps.common.permissions import IsOwnerOrReadOnly
 
 from .models import BloodBank, BloodRequest, BloodRequestStatus
 from .serializers import BloodBankSerializer, BloodRequestSerializer
@@ -34,6 +35,13 @@ class BloodRequestViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["blood_group", "status", "urgency"]
 
+    def get_permissions(self):
+        if self.action in ("update", "partial_update", "destroy"):
+            permission = IsOwnerOrReadOnly()
+            permission.owner_field = "requester"
+            return [permissions.IsAuthenticated(), permission]
+        return [permissions.IsAuthenticated()]
+
     def get_queryset(self):
         qs = super().get_queryset()
         mine = self.request.query_params.get("mine")
@@ -44,6 +52,8 @@ class BloodRequestViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
+        if self.request.user.role not in (Role.GENERAL, Role.RECEIVER, Role.ADMIN):
+            raise PermissionDenied("Only receiver accounts can post blood requests.")
         serializer.save(requester=self.request.user)
 
     @action(detail=True, methods=["post"])
@@ -79,6 +89,10 @@ class BloodRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def fulfill(self, request, pk=None):
         req = self.get_object()
+        if request.user.id not in {req.requester_id, req.matched_donor_id} and (
+            not req.matched_blood_bank or req.matched_blood_bank.user_id != request.user.id
+        ):
+            return Response({"detail": "Only request participants can mark this fulfilled."}, status=status.HTTP_403_FORBIDDEN)
         if req.status != BloodRequestStatus.MATCHED:
             return Response({"detail": "This request isn't matched yet."}, status=status.HTTP_400_BAD_REQUEST)
         req.status = BloodRequestStatus.FULFILLED

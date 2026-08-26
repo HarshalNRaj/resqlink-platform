@@ -33,13 +33,13 @@ export default function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="resources" element={<ResourcesPage />} />
-            <Route path="food" element={<FoodPage />} />
-            <Route path="blood" element={<BloodPage />} />
-            <Route path="emergency" element={<EmergencyPage />} />
-            <Route path="impact" element={<ImpactPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="verifications" element={<VerificationsPage />} />
+            <Route path="resources" element={<ProtectedRoute section="resources"><ResourcesPage /></ProtectedRoute>} />
+            <Route path="food" element={<ProtectedRoute section="food"><FoodPage /></ProtectedRoute>} />
+            <Route path="blood" element={<ProtectedRoute section="blood"><BloodPage /></ProtectedRoute>} />
+            <Route path="emergency" element={<ProtectedRoute section="emergency"><EmergencyPage /></ProtectedRoute>} />
+            <Route path="impact" element={<ProtectedRoute section="impact"><ImpactPage /></ProtectedRoute>} />
+            <Route path="profile" element={<ProtectedRoute section="profile"><ProfilePage /></ProtectedRoute>} />
+            <Route path="verifications" element={<ProtectedRoute section="verifications"><VerificationsPage /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

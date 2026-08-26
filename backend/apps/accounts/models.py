@@ -4,6 +4,7 @@ from django.db import models
 
 class Role(models.TextChoices):
     GENERAL = "general", "General user"
+    RECEIVER = "receiver", "Receiver"
     DONOR = "donor", "Donor"
     VOLUNTEER = "volunteer", "Volunteer"
     NGO = "ngo", "NGO / community organization"

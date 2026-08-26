@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from apps.common.models import Status
 from apps.common.notify import notify
 from apps.common.permissions import IsOwnerOrReadOnly
+from apps.common.permissions import HasRole
+from apps.accounts.models import Role
 
 from .models import FoodListing
 from .serializers import FoodListingSerializer
@@ -20,6 +22,9 @@ class FoodListingViewSet(viewsets.ModelViewSet):
     filterset_fields = ["status"]
 
     def get_permissions(self):
+        if self.action in ("create", "request_item"):
+            self.required_roles = {Role.DONOR, Role.ADMIN} if self.action == "create" else {Role.GENERAL, Role.RECEIVER, Role.ADMIN}
+            return [permissions.IsAuthenticated(), HasRole()]
         if self.action in ("update", "partial_update", "destroy"):
             permission = IsOwnerOrReadOnly()
             permission.owner_field = self.owner_field
@@ -55,6 +60,8 @@ class FoodListingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def assign(self, request, pk=None):
+        if request.user.role not in (Role.VOLUNTEER, Role.NGO, Role.ADMIN):
+            return Response({"detail": "Only volunteers and NGOs can deliver food."}, status=status.HTTP_403_FORBIDDEN)
         listing = self.get_object()
         if listing.status != Status.REQUESTED:
             return Response({"detail": "This listing isn't awaiting a volunteer yet."}, status=status.HTTP_400_BAD_REQUEST)

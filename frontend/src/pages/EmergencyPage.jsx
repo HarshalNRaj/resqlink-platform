@@ -46,7 +46,9 @@ export default function EmergencyPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-ink">Emergency support</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New request"}</Button>
+        {["receiver", "general", "admin"].includes(user?.role) && (
+          <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New request"}</Button>
+        )}
       </div>
 
       {showForm && (
@@ -103,7 +105,7 @@ export default function EmergencyPage() {
           items.map((r) => {
             const isRequester = r.requester === user.id;
             const isResponder = r.assigned_to === user.id;
-            const canClaim = user.role === "volunteer" || user.role === "ngo";
+            const canClaim = user.role === "volunteer" || user.role === "ngo" || user.role === "admin";
             return (
               <Card key={r.id}>
                 <div className="flex items-start justify-between gap-2">

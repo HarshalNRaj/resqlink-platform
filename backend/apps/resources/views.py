@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from apps.common.models import Status
 from apps.common.notify import notify
 from apps.common.permissions import IsOwnerOrReadOnly
+from apps.common.permissions import HasRole
+from apps.accounts.models import Role
 
 from .models import Resource
 from .serializers import ResourceSerializer
@@ -19,6 +21,9 @@ class ResourceViewSet(viewsets.ModelViewSet):
     filterset_fields = ["category", "status", "condition"]
 
     def get_permissions(self):
+        if self.action in ("create", "request_item"):
+            self.required_roles = {Role.DONOR, Role.ADMIN} if self.action == "create" else {Role.GENERAL, Role.RECEIVER, Role.ADMIN}
+            return [permissions.IsAuthenticated(), HasRole()]
         # IsOwnerOrReadOnly only makes sense for editing/deleting the listing
         # itself — the lifecycle actions (request/assign/complete/cancel) have
         # their own in-method checks against the *relevant* party, not the owner.
@@ -55,6 +60,8 @@ class ResourceViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def assign(self, request, pk=None):
+        if request.user.role not in (Role.VOLUNTEER, Role.NGO, Role.ADMIN):
+            return Response({"detail": "Only volunteers and NGOs can deliver resources."}, status=status.HTTP_403_FORBIDDEN)
         resource = self.get_object()
         if resource.status != Status.REQUESTED:
             return Response({"detail": "This item isn't awaiting a volunteer yet."}, status=status.HTTP_400_BAD_REQUEST)

@@ -32,3 +32,13 @@ class HasRole(permissions.BasePermission):
         if not required:
             return True
         return request.user.role in required
+
+
+class HasAnyRole(permissions.BasePermission):
+    """Allow only the configured roles for a view or action."""
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        roles = getattr(view, "required_roles", set())
+        return request.user.is_superuser or request.user.role in roles

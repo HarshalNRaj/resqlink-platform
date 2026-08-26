@@ -5,7 +5,7 @@ import Button from "../components/Button";
 import { FieldLabel, Select, TextInput } from "../components/ui";
 
 const ROLES = [
-  { value: "general", label: "General user — browse & request" },
+  { value: "receiver", label: "Receiver — ask for items, food, or blood" },
   { value: "donor", label: "Donor — give items, food, or blood" },
   { value: "volunteer", label: "Volunteer — handle pickup & delivery" },
   { value: "ngo", label: "NGO / community organization" },
@@ -19,7 +19,7 @@ export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     username: "", email: "", password: "", first_name: "",
-    role: "general", organization_name: "", blood_group: "", phone: "",
+    role: "receiver", organization_name: "", blood_group: "", phone: "",
   });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -72,7 +72,7 @@ export default function Register() {
             R
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold text-ink">Join ResQLink</h1>
-          <p className="mt-1 text-sm text-ink-soft">One account, every way to help.</p>
+          <p className="mt-1 text-sm text-ink-soft">Choose the way you participate.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">

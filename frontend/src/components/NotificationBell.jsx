@@ -1,11 +1,13 @@
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { notifications as notifApi } from "../api/endpoints";
+import { useNavigate } from "react-router-dom";
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const ref = useRef(null);
+  const navigate = useNavigate();
 
   const load = () => {
     notifApi.list().then(({ data }) => setItems(data.results || data));
@@ -29,6 +31,17 @@ export default function NotificationBell() {
 
   const markAll = async () => {
     await notifApi.markAllRead();
+    load();
+  };
+
+  const openNotification = async (notification) => {
+    if (!notification.is_read) await notifApi.markRead(notification.id);
+    setOpen(false);
+    const message = notification.message.toLowerCase();
+    const section = message.includes("blood") || message.includes("donat") ? "blood"
+      : message.includes("food") || message.includes("rescued") ? "food"
+        : message.includes("emergency") ? "emergency" : "resources";
+    navigate(`/app/${section}`);
     load();
   };
 
@@ -61,13 +74,15 @@ export default function NotificationBell() {
               <p className="px-4 py-6 text-center text-sm text-ink-soft">You're all caught up.</p>
             ) : (
               items.slice(0, 20).map((n) => (
-                <div
+                <button
                   key={n.id}
-                  className={`border-b border-line px-4 py-3 text-sm last:border-0 ${!n.is_read ? "bg-primary-50/50" : ""}`}
+                  onClick={() => openNotification(n)}
+                  type="button"
+                  className={`block w-full border-b border-line px-4 py-3 text-left text-sm last:border-0 hover:bg-primary-50 ${!n.is_read ? "bg-primary-50/50" : ""}`}
                 >
                   <p className="text-ink">{n.message}</p>
                   <p className="mt-1 text-xs text-ink-soft">{new Date(n.created_at).toLocaleString()}</p>
-                </div>
+                </button>
               ))
             )}
           </div>

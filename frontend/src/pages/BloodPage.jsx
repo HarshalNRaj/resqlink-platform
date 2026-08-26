@@ -47,7 +47,9 @@ export default function BloodPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-ink">Blood requests</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New request"}</Button>
+        {["receiver", "general", "admin"].includes(user?.role) && (
+          <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New request"}</Button>
+        )}
       </div>
 
       {showForm && (

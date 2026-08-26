@@ -4,14 +4,15 @@ import {
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import NotificationBell from "./NotificationBell";
+import { canAccess } from "../roleAccess";
 
 const NAV = [
-  { to: "/app", icon: LayoutDashboard, label: "Dashboard", end: true },
-  { to: "/app/resources", icon: Package, label: "Resources" },
-  { to: "/app/food", icon: UtensilsCrossed, label: "Food rescue" },
-  { to: "/app/blood", icon: Droplet, label: "Blood requests" },
-  { to: "/app/emergency", icon: Siren, label: "Emergency support" },
-  { to: "/app/impact", icon: BarChart3, label: "Impact" },
+  { to: "/app", section: "dashboard", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { to: "/app/resources", section: "resources", icon: Package, label: "Resources" },
+  { to: "/app/food", section: "food", icon: UtensilsCrossed, label: "Food rescue" },
+  { to: "/app/blood", section: "blood", icon: Droplet, label: "Blood requests" },
+  { to: "/app/emergency", section: "emergency", icon: Siren, label: "Emergency support" },
+  { to: "/app/impact", section: "impact", icon: BarChart3, label: "Impact" },
 ];
 
 export default function Layout() {
@@ -33,7 +34,7 @@ export default function Layout() {
           <span className="font-display text-lg font-bold text-ink">ResQLink</span>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-2">
-          {NAV.map(({ to, icon: Icon, label, end }) => (
+          {NAV.filter(({ section }) => section === "dashboard" || canAccess(user?.role, section)).map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
