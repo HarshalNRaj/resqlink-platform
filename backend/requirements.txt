@@ -10,5 +10,5 @@ gunicorn==23.0.0
 # Static file serving
 whitenoise==6.9.0
 
-# MySQL
-mysqlclient==2.2.7
+# MySQL (pure Python driver; no C++ build tools required on Windows)
+PyMySQL==1.1.1

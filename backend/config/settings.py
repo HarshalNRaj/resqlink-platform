@@ -74,7 +74,8 @@ DATABASES = {
         "PORT": os.environ.get("DB_PORT", "3306"),
         "OPTIONS": {"charset": "utf8mb4"},
         "CONN_MAX_AGE": 60,
-    }
+    },
+}
 
 AUTH_USER_MODEL = "accounts.User"
 
