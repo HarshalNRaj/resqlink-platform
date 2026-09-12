@@ -1,4 +1,4 @@
-Django==6.1
+Django==5.2.6
 djangorestframework==3.18.0
 djangorestframework-simplejwt==5.5.1
 django-cors-headers==4.9.0
@@ -12,3 +12,4 @@ whitenoise==6.9.0
 
 # MySQL (pure Python driver; no C++ build tools required on Windows)
 PyMySQL==1.1.1
+cryptography==46.0.1
