@@ -1,32 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  /* Color system — deep teal for trust/coordination, coral for urgency
-     (blood + emergency modules), amber for impact/reward moments. */
-  --color-paper: #F3F7F5;
-  --color-surface: #FFFFFF;
-  --color-ink: #14201D;
-  --color-ink-soft: #4B5D58;
+  --color-paper: #f4ecdd;
+  --color-surface: #fbf7ef;
+  --color-ink: #211611;
+  --color-ink-soft: #6b5a4e;
 
-  --color-primary-50: #E4F1EF;
-  --color-primary-100: #C3E2DD;
-  --color-primary-500: #0F5C56;
-  --color-primary-600: #0C4A45;
-  --color-primary-700: #0A3D39;
+  --color-primary-50: #eee0cf;
+  --color-primary-100: #dfcbb6;
+  --color-primary-500: #6d2d22;
+  --color-primary-600: #542119;
+  --color-primary-700: #351710;
 
-  --color-urgent-50: #FBE9E6;
-  --color-urgent-500: #D34B3D;
-  --color-urgent-600: #B23A2E;
+  --color-urgent-50: #f5dfd8;
+  --color-urgent-500: #a33e2d;
+  --color-urgent-600: #7d2d21;
 
-  --color-amber-50: #FCF1DC;
-  --color-amber-500: #E8A93B;
-  --color-amber-600: #C48A22;
+  --color-amber-50: #f5e8c9;
+  --color-amber-500: #9b6a2e;
+  --color-amber-600: #755020;
 
-  --color-line: #DCE6E2;
+  --color-line: #dfd2bf;
 
-  --font-display: "Sora", "Inter", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-mono: "Courier New", monospace;
 }
 
 html {
@@ -37,10 +35,15 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-paper);
   color: var(--color-ink);
+  letter-spacing: 0.01em;
 }
 
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
+}
+
+.font-display {
+  letter-spacing: -0.02em;
 }
 
 .font-stat {
@@ -68,6 +71,14 @@ h1, h2, h3, h4, .font-display {
   width: 100%;
   border-radius: 0.75rem;
   font-family: var(--font-body);
+}
+
+.editorial-kicker {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
 }
 
 ::-webkit-scrollbar {
