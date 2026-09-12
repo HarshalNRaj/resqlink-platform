@@ -6,24 +6,69 @@ import { Card } from "../components/ui";
 import StatusBadge from "../components/StatusBadge";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const role = user?.role;
   const isDonor = role === "donor";
   const isResponder = role === "volunteer" || role === "ngo";
   const isReceiver = role === "receiver" || role === "general";
+
   const [stats, setStats] = useState(null);
   const [myResources, setMyResources] = useState([]);
   const [myFood, setMyFood] = useState([]);
   const [myBlood, setMyBlood] = useState([]);
   const [myEmergency, setMyEmergency] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    impactApi.summary().then(({ data }) => setStats(data)).catch(() => {});
-    resources.list({ mine: isResponder ? "volunteering" : isReceiver ? "requested" : "owned" }).then(({ data }) => setMyResources(data.results || data)).catch(() => {});
-    food.list({ mine: isResponder ? "volunteering" : isReceiver ? "requested" : "provided" }).then(({ data }) => setMyFood(data.results || data)).catch(() => {});
-    blood.list({ mine: isReceiver ? "requested" : "matched" }).then(({ data }) => setMyBlood(data.results || data)).catch(() => {});
-    emergency.list({ mine: isResponder ? "assigned" : "requested" }).then(({ data }) => setMyEmergency(data.results || data)).catch(() => {});
-  }, [isReceiver, isResponder]);
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    const load = async () => {
+      try {
+        if (typeof refreshUser === "function") {
+          await refreshUser();
+        }
+
+        const [statsRes, resourcesRes, foodRes, bloodRes, emergencyRes] =
+          await Promise.all([
+            impactApi.summary(),
+            resources.list({
+              mine: isResponder ? "volunteering" : isReceiver ? "requested" : "owned",
+            }),
+            food.list({
+              mine: isResponder ? "volunteering" : isReceiver ? "requested" : "provided",
+            }),
+            blood.list({ mine: isReceiver ? "requested" : "matched" }),
+            emergency.list({ mine: isResponder ? "assigned" : "requested" }),
+          ]);
+
+        if (!mounted) return;
+
+        setStats(statsRes.data);
+        setMyResources(resourcesRes.data?.results || resourcesRes.data || []);
+        setMyFood(foodRes.data?.results || foodRes.data || []);
+        setMyBlood(bloodRes.data?.results || bloodRes.data || []);
+        setMyEmergency(emergencyRes.data?.results || emergencyRes.data || []);
+        setLoading(false);
+      } catch (err) {
+        if (!mounted) return;
+        setError(
+          err?.response?.data?.detail ||
+            err?.message ||
+            "Failed to load dashboard. Please check your connection and try again."
+        );
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [isReceiver, isResponder, refreshKey, refreshUser]);
 
   const title = isDonor ? "Your donations" : isResponder ? "Your response work" : "Your requests";
   const intro = isDonor
@@ -31,6 +76,35 @@ export default function Dashboard() {
     : isResponder
       ? "Track the pickups and emergency responses you are handling."
       : "Track the help you have requested and the support on its way.";
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+          <p className="mt-4 text-sm text-ink-soft">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <div className="py-8 text-center">
+          <h2 className="font-display text-lg font-semibold text-ink">Unable to load dashboard</h2>
+          <p className="mt-2 text-sm text-ink-soft">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRefreshKey((key) => key + 1)}
+            className="mt-4 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div>
