@@ -1,0 +1,6 @@
+{
+  "name": "ResQLink",
+  "description": "Empowering neighbors through shared resources, food rescue, blood coordination, and emergency response.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
