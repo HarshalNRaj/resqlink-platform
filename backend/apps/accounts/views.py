@@ -1,14 +1,13 @@
-from rest_framework import generics, permissions, status
+from django.contrib.auth import get_user_model
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Role, User
-from .serializers import MyTokenObtainPairSerializer, RegisterSerializer, UserSerializer
+from .serializers import UserSerializer, RegisterSerializer
+from ..common.permissions import IsVerifiedOrganization
 
-
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
@@ -20,63 +19,52 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        refresh = RefreshToken.for_user(user)
+        user_data = UserSerializer(user).data
+
+        message = (
+            "Account created. Verification by an admin is pending."
+            if user.role in ['ngo', 'blood_bank']
+            else "Account created successfully."
+        )
+
         return Response(
             {
-                "user": UserSerializer(user).data,
-                "message": (
-                    "Account created. Verification by an admin is pending."
-                    if user.role in (Role.NGO, Role.BLOOD_BANK)
-                    else "Account created."
-                ),
+                "user": user_data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "message": message,
             },
             status=status.HTTP_201_CREATED,
         )
 
 
-class MeView(APIView):
-    def get(self, request):
-        return Response(UserSerializer(request.user).data)
-
-    def patch(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
-class DonorListView(generics.ListAPIView):
-    """Registered donors currently available to donate, optionally filtered
-    by blood group — used by the blood coordination module.
-    """
+class MeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        qs = User.objects.filter(role=Role.DONOR, is_donor_available=True)
-        blood_group = self.request.query_params.get("blood_group")
-        if blood_group:
-            qs = qs.filter(blood_group=blood_group)
-        return qs
-
-
-class VerifyOrganizationView(APIView):
-    """Admin-only: approve a pending NGO or blood bank account."""
-
-    def post(self, request, pk):
-        if request.user.role != Role.ADMIN and not request.user.is_superuser:
-            return Response({"detail": "Admins only."}, status=status.HTTP_403_FORBIDDEN)
-        try:
-            org = User.objects.get(pk=pk, role__in=[Role.NGO, Role.BLOOD_BANK])
-        except User.DoesNotExist:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        org.is_verified = True
-        org.save(update_fields=["is_verified"])
-        return Response(UserSerializer(org).data)
+    def get_object(self):
+        return self.request.user
 
 
 class PendingVerificationsView(generics.ListAPIView):
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
     def get_queryset(self):
-        if self.request.user.role != Role.ADMIN and not self.request.user.is_superuser:
-            return User.objects.none()
-        return User.objects.filter(role__in=[Role.NGO, Role.BLOOD_BANK], is_verified=False)
+        return User.objects.filter(role__in=['ngo', 'blood_bank'], is_verified=False)
+
+
+class ApproveVerificationView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk, role__in=['ngo', 'blood_bank'])
+        except User.DoesNotExist:
+            return Response({"detail": "Organization not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        user.is_verified = True
+        user.save(update_fields=['is_verified'])
+        return Response(UserSerializer(user).data)

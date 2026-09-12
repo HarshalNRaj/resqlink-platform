@@ -1,8 +1,10 @@
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-
 from .views import EmergencyRequestViewSet
 
 router = DefaultRouter()
-router.register("", EmergencyRequestViewSet, basename="emergency")
+router.register(r'', EmergencyRequestViewSet, basename='emergency')
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('', include(router.urls)),
+]

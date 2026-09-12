@@ -1,91 +1,80 @@
-from django.utils import timezone
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, status, viewsets
+from rest_framework import viewsets, permissions, status, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
-from apps.common.models import Status
-from apps.common.notify import notify
-from apps.common.permissions import IsOwnerOrReadOnly
-
+from django.utils import timezone
 from .models import FoodListing
 from .serializers import FoodListingSerializer
+from ..common.permissions import IsVerifiedOrganization
 
 
 class FoodListingViewSet(viewsets.ModelViewSet):
-    queryset = FoodListing.objects.select_related("provider", "requester", "volunteer").all()
+    queryset = FoodListing.objects.all().order_by('-created_at')
     serializer_class = FoodListingSerializer
-    owner_field = "provider"
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["status"]
-
-    def get_permissions(self):
-        if self.action in ("update", "partial_update", "destroy"):
-            permission = IsOwnerOrReadOnly()
-            permission.owner_field = self.owner_field
-            return [permissions.IsAuthenticated(), permission]
-        return [permissions.IsAuthenticated()]
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        mine = self.request.query_params.get("mine")
-        if mine == "provided":
-            qs = qs.filter(provider=self.request.user)
-        elif mine == "requested":
-            qs = qs.filter(requester=self.request.user)
-        elif mine == "volunteering":
-            qs = qs.filter(volunteer=self.request.user)
-        return qs
+    permission_classes = [permissions.IsAuthenticated, IsVerifiedOrganization]
 
     def perform_create(self, serializer):
-        serializer.save(provider=self.request.user)
+        user = self.request.user
+        if getattr(user, 'role', '') in ['general', 'receiver', 'volunteer', 'blood_bank']:
+            raise exceptions.PermissionDenied("Only food donors and organization accounts can create food listings.")
+        serializer.save(provider=user)
 
-    @action(detail=True, methods=["post"])
-    def request_item(self, request, pk=None):
+    def perform_update(self, serializer):
+        user = self.request.user
         listing = self.get_object()
-        if listing.status != Status.AVAILABLE:
-            return Response({"detail": "This listing is no longer available."}, status=status.HTTP_400_BAD_REQUEST)
-        if listing.provider_id == request.user.id:
-            return Response({"detail": "You can't claim your own listing."}, status=status.HTTP_400_BAD_REQUEST)
+        if listing.provider != user and not getattr(user, 'is_staff', False) and getattr(user, 'role', '') != 'admin':
+            raise exceptions.PermissionDenied("You do not have permission to edit this food listing.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if instance.provider != user and not getattr(user, 'is_staff', False) and getattr(user, 'role', '') != 'admin':
+            raise exceptions.PermissionDenied("You do not have permission to delete this food listing.")
+        instance.delete()
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def request_food(self, request, pk=None):
+        listing = self.get_object()
+        if listing.status != FoodListing.Status.AVAILABLE:
+            return Response({"detail": "Food listing is not available."}, status=status.HTTP_400_BAD_REQUEST)
+        if listing.provider == request.user:
+            return Response({"detail": "You cannot request your own food listing."}, status=status.HTTP_400_BAD_REQUEST)
+        listing.status = FoodListing.Status.REQUESTED
         listing.requester = request.user
-        listing.status = Status.REQUESTED
-        listing.save(update_fields=["requester", "status", "updated_at"])
-        notify(listing.provider, f"{request.user.username} claimed your food listing '{listing.title}'.")
-        return Response(FoodListingSerializer(listing).data)
+        listing.save()
+        return Response(self.get_serializer(listing).data)
 
-    @action(detail=True, methods=["post"])
-    def assign(self, request, pk=None):
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def request_item(self, request, pk=None):
+        return self.request_food(request, pk)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsVerifiedOrganization])
+    def assign_volunteer(self, request, pk=None):
+        if getattr(request.user, 'role', '') in ['general', 'receiver']:
+            return Response({"detail": "Receivers cannot accept volunteer delivery assignments."}, status=status.HTTP_403_FORBIDDEN)
+        if getattr(request.user, 'role', '') not in ['volunteer', 'ngo', 'admin'] and not getattr(request.user, 'is_staff', False):
+            return Response({"detail": "Only volunteers and organizations can accept delivery assignments."}, status=status.HTTP_403_FORBIDDEN)
         listing = self.get_object()
-        if listing.status != Status.REQUESTED:
-            return Response({"detail": "This listing isn't awaiting a volunteer yet."}, status=status.HTTP_400_BAD_REQUEST)
+        if listing.status != FoodListing.Status.REQUESTED:
+            return Response({"detail": "Listing is not in requested status."}, status=status.HTTP_400_BAD_REQUEST)
+        listing.status = FoodListing.Status.ASSIGNED
         listing.volunteer = request.user
-        listing.status = Status.ASSIGNED
-        listing.save(update_fields=["volunteer", "status", "updated_at"])
-        notify(listing.provider, f"{request.user.username} will pick up '{listing.title}'.")
-        notify(listing.requester, f"{request.user.username} will deliver '{listing.title}' to you.")
-        return Response(FoodListingSerializer(listing).data)
+        listing.save()
+        return Response(self.get_serializer(listing).data)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsVerifiedOrganization])
+    def assign(self, request, pk=None):
+        return self.assign_volunteer(request, pk)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def complete(self, request, pk=None):
         listing = self.get_object()
-        if listing.status != Status.ASSIGNED:
-            return Response({"detail": "This listing isn't ready to be marked complete."}, status=status.HTTP_400_BAD_REQUEST)
-        if request.user.id not in {listing.provider_id, listing.volunteer_id}:
-            return Response({"detail": "Only the provider or assigned volunteer can complete this."}, status=status.HTTP_403_FORBIDDEN)
-        listing.status = Status.COMPLETED
+        if listing.status not in [FoodListing.Status.ASSIGNED, FoodListing.Status.REQUESTED]:
+            return Response({"detail": "Food listing is not ready for completion."}, status=status.HTTP_400_BAD_REQUEST)
+        allowed = [listing.provider, listing.requester, listing.volunteer]
+        is_staff = getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', '') == 'admin'
+        if request.user not in allowed and not is_staff:
+            return Response({"detail": "You do not have permission to mark this food listing complete."}, status=status.HTTP_403_FORBIDDEN)
+        listing.status = FoodListing.Status.COMPLETED
         listing.completed_at = timezone.now()
-        listing.save(update_fields=["status", "completed_at", "updated_at"])
-        for u in {listing.provider, listing.requester, listing.volunteer}:
-            notify(u, f"'{listing.title}' was rescued successfully. Thanks for the impact!")
-        return Response(FoodListingSerializer(listing).data)
-
-    @action(detail=True, methods=["post"])
-    def cancel(self, request, pk=None):
-        listing = self.get_object()
-        if listing.provider_id != request.user.id:
-            return Response({"detail": "Only the provider can cancel a listing."}, status=status.HTTP_403_FORBIDDEN)
-        if listing.status == Status.COMPLETED:
-            return Response({"detail": "A completed listing can't be cancelled."}, status=status.HTTP_400_BAD_REQUEST)
-        listing.status = Status.CANCELLED
-        listing.save(update_fields=["status", "updated_at"])
-        return Response(FoodListingSerializer(listing).data)
+        listing.save()
+        return Response(self.get_serializer(listing).data)
