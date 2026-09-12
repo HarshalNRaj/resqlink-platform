@@ -65,21 +65,26 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-500 font-display text-lg font-bold text-white">
-            R
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-ink">Join ResQLink</h1>
-          <p className="mt-1 text-sm text-ink-soft">One account, every way to help.</p>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Link to="/" className="flex items-center gap-2 mb-3">
+            <span className="font-serif text-3xl font-semibold tracking-tight text-ink lowercase">
+              resqlink
+            </span>
+          </Link>
+          <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#6B1F1F]">
+            Community Membership
+          </span>
+          <h1 className="mt-2 font-serif text-3xl font-medium text-ink">Join the Network</h1>
+          <p className="mt-1 text-sm font-serif text-ink-muted">One shared registry, every way to help.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
-          {error && <div className="rounded-lg bg-urgent-50 px-3 py-2 text-sm text-urgent-600">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-line bg-surface p-7 shadow-[0_4px_20px_rgba(26,20,16,0.05)]">
+          {error && <div className="rounded-md bg-urgent-50 border border-urgent-100 px-3 py-2 text-xs font-mono text-urgent-500">{error}</div>}
 
           <div>
-            <FieldLabel>I want to join as</FieldLabel>
+            <FieldLabel>Membership Classification</FieldLabel>
             <Select value={form.role} onChange={handleChange("role")}>
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
@@ -93,13 +98,13 @@ export default function Register() {
               <TextInput value={form.username} onChange={handleChange("username")} required />
             </div>
             <div>
-              <FieldLabel>First name</FieldLabel>
+              <FieldLabel>First Name</FieldLabel>
               <TextInput value={form.first_name} onChange={handleChange("first_name")} />
             </div>
           </div>
 
           <div>
-            <FieldLabel>Email</FieldLabel>
+            <FieldLabel>Email Address</FieldLabel>
             <TextInput type="email" value={form.email} onChange={handleChange("email")} required />
           </div>
 
@@ -110,19 +115,19 @@ export default function Register() {
 
           {needsOrg && (
             <div>
-              <FieldLabel>Organization name</FieldLabel>
+              <FieldLabel>Organization Name</FieldLabel>
               <TextInput value={form.organization_name} onChange={handleChange("organization_name")} required />
-              <p className="mt-1 text-xs text-ink-soft">
-                NGO and blood bank accounts need admin verification before they're marked verified.
+              <p className="mt-1.5 font-mono text-[11px] text-ink-muted">
+                NGO and blood bank accounts need admin verification before receiving badges.
               </p>
             </div>
           )}
 
           {form.role === "donor" && (
             <div>
-              <FieldLabel>Blood group (optional)</FieldLabel>
+              <FieldLabel>Blood Group (Optional)</FieldLabel>
               <Select value={form.blood_group} onChange={handleChange("blood_group")}>
-                <option value="">Prefer not to say</option>
+                <option value="">Prefer not to disclose</option>
                 {BLOOD_GROUPS.map((g) => (
                   <option key={g} value={g}>{g}</option>
                 ))}
@@ -130,15 +135,15 @@ export default function Register() {
             </div>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Creating account…" : "Create account"}
+          <Button type="submit" disabled={loading} className="w-full font-mono text-xs uppercase tracking-[0.2em] py-2.5">
+            {loading ? "Creating account…" : "Register Account →"}
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-ink-soft">
-          Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-primary-600 hover:underline">
-            Sign in
+        <p className="mt-6 text-center text-xs font-mono text-ink-soft">
+          Already registered?{" "}
+          <Link to="/login" className="font-medium text-[#2C3A2C] underline hover:text-[#6B1F1F]">
+            Sign in to your console
           </Link>
         </p>
       </div>

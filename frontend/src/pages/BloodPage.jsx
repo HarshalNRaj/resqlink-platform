@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { blood } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import { Card, EmptyState, FieldLabel, Select, TextArea, TextInput } from "../components/ui";
@@ -50,47 +51,57 @@ export default function BloodPage() {
         <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "+ New request"}</Button>
       </div>
 
-      {showForm && (
-        <Card className="mt-4">
-          <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <FieldLabel>Blood group</FieldLabel>
-              <Select value={form.blood_group} onChange={(e) => setForm({ ...form, blood_group: e.target.value })} required>
-                <option value="" disabled>Select…</option>
-                {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
-              </Select>
-            </div>
-            <div>
-              <FieldLabel>Units needed</FieldLabel>
-              <TextInput type="number" min="1" value={form.units_needed} onChange={(e) => setForm({ ...form, units_needed: e.target.value })} required />
-            </div>
-            <div>
-              <FieldLabel>Urgency</FieldLabel>
-              <Select value={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.value })}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </Select>
-            </div>
-            <div>
-              <FieldLabel>Hospital name</FieldLabel>
-              <TextInput value={form.hospital_name} onChange={(e) => setForm({ ...form, hospital_name: e.target.value })} required />
-            </div>
-            <div className="sm:col-span-2">
-              <FieldLabel>Location</FieldLabel>
-              <TextInput value={form.address_text} onChange={(e) => setForm({ ...form, address_text: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <FieldLabel>Notes</FieldLabel>
-              <TextArea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit">Post request</Button>
-            </div>
-          </form>
-        </Card>
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <Card className="mt-4 border-[#1A1410]/15">
+              <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <FieldLabel>Blood group</FieldLabel>
+                  <Select value={form.blood_group} onChange={(e) => setForm({ ...form, blood_group: e.target.value })} required>
+                    <option value="" disabled>Select…</option>
+                    {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <FieldLabel>Units needed</FieldLabel>
+                  <TextInput type="number" min="1" value={form.units_needed} onChange={(e) => setForm({ ...form, units_needed: e.target.value })} required />
+                </div>
+                <div>
+                  <FieldLabel>Urgency</FieldLabel>
+                  <Select value={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.value })}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </Select>
+                </div>
+                <div>
+                  <FieldLabel>Hospital name</FieldLabel>
+                  <TextInput value={form.hospital_name} onChange={(e) => setForm({ ...form, hospital_name: e.target.value })} required />
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel>Location</FieldLabel>
+                  <TextInput value={form.address_text} onChange={(e) => setForm({ ...form, address_text: e.target.value })} />
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel>Notes</FieldLabel>
+                  <TextArea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Button type="submit">Post request</Button>
+                </div>
+              </form>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
@@ -100,49 +111,59 @@ export default function BloodPage() {
             <EmptyState title="No open blood requests" body="When someone posts a request, it'll show up here." />
           </div>
         ) : (
-          items.map((r) => {
+          items.map((r, idx) => {
             const isRequester = r.requester === user.id;
             const isDonor = user.role === "donor";
             const isBloodBankUser = user.role === "blood_bank";
             return (
-              <Card key={r.id}>
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-display text-lg font-bold text-primary-700">{r.blood_group}</h3>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <StatusBadge status={r.status} />
-                    <UrgencyBadge urgency={r.urgency} />
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05, duration: 0.25 }}
+                whileHover={{ y: -3 }}
+              >
+                <Card className="border-[#1A1410]/12 flex flex-col justify-between h-full">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-mono text-xl font-bold text-[#6B1F1F]">{r.blood_group}</h3>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <StatusBadge status={r.status} />
+                        <UrgencyBadge urgency={r.urgency} />
+                      </div>
+                    </div>
+                    <p className="mt-1.5 font-serif text-sm text-ink">{r.units_needed} unit(s) · {r.hospital_name}</p>
+                    {r.address_text && <p className="font-mono text-xs text-ink-muted">{r.address_text}</p>}
+                    {r.notes && <p className="mt-1.5 font-serif text-sm text-ink-soft">{r.notes}</p>}
+                    <p className="mt-2 font-mono text-[11px] text-ink-muted">Requested by {r.requester_username}</p>
+                    {r.matched_donor_username && <p className="font-mono text-[11px] text-ink-muted">Matched donor: {r.matched_donor_username}</p>}
+                    {r.matched_blood_bank_name && <p className="font-mono text-[11px] text-ink-muted">Matched bank: {r.matched_blood_bank_name}</p>}
                   </div>
-                </div>
-                <p className="mt-1.5 text-sm text-ink">{r.units_needed} unit(s) · {r.hospital_name}</p>
-                {r.address_text && <p className="text-xs text-ink-soft">{r.address_text}</p>}
-                {r.notes && <p className="mt-1.5 text-sm text-ink-soft">{r.notes}</p>}
-                <p className="mt-2 text-xs text-ink-soft">Requested by {r.requester_username}</p>
-                {r.matched_donor_username && <p className="text-xs text-ink-soft">Matched donor: {r.matched_donor_username}</p>}
-                {r.matched_blood_bank_name && <p className="text-xs text-ink-soft">Matched bank: {r.matched_blood_bank_name}</p>}
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {r.status === "open" && isDonor && (
-                    <Button variant="outline" disabled={busyId === r.id} onClick={() => act(blood.offerToDonate, r.id)}>
-                      Offer to donate
-                    </Button>
-                  )}
-                  {r.status === "open" && isBloodBankUser && (
-                    <Button variant="outline" disabled={busyId === r.id} onClick={() => act(blood.matchBloodBank, r.id)}>
-                      Commit units
-                    </Button>
-                  )}
-                  {r.status === "matched" && isRequester && (
-                    <Button disabled={busyId === r.id} onClick={() => act(blood.fulfill, r.id)}>
-                      Mark fulfilled
-                    </Button>
-                  )}
-                  {isRequester && r.status !== "fulfilled" && r.status !== "cancelled" && (
-                    <Button variant="ghost" disabled={busyId === r.id} onClick={() => act(blood.cancel, r.id)}>
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </Card>
+                  <div className="mt-4 pt-3 border-t border-line flex flex-wrap gap-2">
+                    {r.status === "open" && isDonor && (
+                      <Button variant="outline" disabled={busyId === r.id} onClick={() => act(blood.offerToDonate, r.id)}>
+                        Offer to donate
+                      </Button>
+                    )}
+                    {r.status === "open" && isBloodBankUser && (
+                      <Button variant="outline" disabled={busyId === r.id} onClick={() => act(blood.matchBloodBank, r.id)}>
+                        Commit units
+                      </Button>
+                    )}
+                    {r.status === "matched" && isRequester && (
+                      <Button disabled={busyId === r.id} onClick={() => act(blood.fulfill, r.id)}>
+                        Mark fulfilled
+                      </Button>
+                    )}
+                    {isRequester && r.status !== "fulfilled" && r.status !== "cancelled" && (
+                      <Button variant="ghost" disabled={busyId === r.id} onClick={() => act(blood.cancel, r.id)}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             );
           })
         )}
