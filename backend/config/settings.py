@@ -1,13 +1,5 @@
-"""
-ResQLink backend settings.
-
-Uses SQLite by default for zero-config local development. To use MySQL
-(as specified in the project synopsis), set the DB_ENGINE=mysql env var
-and provide DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT — no code changes
-needed, see the DATABASES block below.
-"""
+"""ResQLink backend settings."""
 import os
-import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 
@@ -72,34 +64,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Production: Render injects DATABASE_URL automatically
-# Development: falls back to SQLite
-if os.environ.get("DATABASE_URL"):
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=os.environ.get("DATABASE_URL"),
-            conn_max_age=600,
-            ssl_require=True,
-        )
-    }
-elif os.environ.get("DB_ENGINE") == "mysql":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_NAME", "resqlink"),
-            "USER": os.environ.get("DB_USER", "root"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "3306"),
-            "OPTIONS": {"charset": "utf8mb4"},
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", "resqlink"),
+        "USER": os.environ.get("DB_USER", "root"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
+        "OPTIONS": {"charset": "utf8mb4"},
+        "CONN_MAX_AGE": 60,
     }
 
 AUTH_USER_MODEL = "accounts.User"
