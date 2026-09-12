@@ -1,0 +1,6 @@
+{
+  "name": "ResQLink",
+  "description": "Community resource sharing, food rescue, blood coordination, and emergency support platform.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

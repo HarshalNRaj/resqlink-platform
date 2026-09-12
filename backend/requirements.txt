@@ -1,0 +1,18 @@
+Django==6.1
+djangorestframework==3.18.0
+djangorestframework-simplejwt==5.5.1
+django-cors-headers==4.9.0
+django-filter==26.1
+
+# Production server
+gunicorn==23.0.0
+
+# Static file serving
+whitenoise==6.9.0
+
+# PostgreSQL (Render)
+dj-database-url==2.3.0
+psycopg2-binary==2.9.10
+
+# Uncomment if using MySQL (set DB_ENGINE=mysql in your environment):
+# mysqlclient==2.2.7
